@@ -21,7 +21,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
   selectedApp: string | null;
+  scalingMethod: 'linear' | 'logarithmic';
 }>();
+
 
 const keyboardLayout = [
   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Del', 'Ins'],
@@ -44,9 +46,19 @@ const maxHeat = computed(() => Math.max(...Object.values(keyHeatData.value), 1))
 
 const getHeatColor = (key: string) => {
   const heat = keyHeatData.value[key] || 0;
-  const intensity = heat / maxHeat.value;
+  let intensity;
+  
+  if (props.scalingMethod === 'logarithmic') {
+    // Logarithmic scaling
+    intensity = Math.log(heat + 1) / Math.log(maxHeat.value + 1);
+  } else {
+    // Linear scaling
+    intensity = heat / maxHeat.value;
+  }
+  
   return `rgba(255, 0, 0, ${intensity})`;
 };
+
 
 const getKeySize = (key: string) => {
   switch (key) {
