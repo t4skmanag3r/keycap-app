@@ -1,49 +1,105 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use rusqlite::{Connection, Result};
+use dirs;
+use lazy_static::lazy_static;
+use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::Mutex;
 
 mod key_mapping;
 
 use key_mapping::convert_key_name;
+
+fn get_db_path() -> PathBuf {
+    let mut path = dirs::data_local_dir().unwrap_or_else(|| {
+        eprintln!("Could not determine data directory, using current directory");
+        std::env::current_dir().unwrap()
+    });
+    path.push("keycap");
+    std::fs::create_dir_all(&path).unwrap();
+    path.push("key_stats.db");
+    path
+}
+
+lazy_static! {
+    static ref DB_PATH: Mutex<PathBuf> = Mutex::new(get_db_path());
+}
+
+fn get_db_connection() -> Result<Connection, rusqlite::Error> {
+    let path = DB_PATH.lock().unwrap();
+    Connection::open(&*path)
+}
 
 #[derive(Serialize, Deserialize)]
 struct KeyStat {
     key: String,
     count: i32,
 }
-#[tauri::command]
-fn get_key_stats() -> Result<Vec<KeyStat>, String> {
-    let conn = Connection::open("key_stats.db").map_err(|e| e.to_string())?;
 
-    let mut stmt = conn
-        .prepare(
+fn map_row(row: &Row) -> Result<KeyStat, rusqlite::Error> {
+    let db_key: String = row.get(0)?;
+    let converted_key = convert_key_name(&db_key);
+    Ok(KeyStat {
+        key: converted_key,
+        count: row.get(1)?,
+    })
+}
+
+#[tauri::command]
+fn get_key_stats(app_name: Option<String>) -> Result<Vec<KeyStat>, String> {
+    let conn = get_db_connection().map_err(|e| e.to_string())?;
+
+    let query = match app_name {
+        Some(_) => {
+            "SELECT km.key_str, SUM(ks.count) as total_count
+             FROM key_stats ks
+             JOIN key_mapping km ON ks.key_id = km.key_id
+             JOIN app_mapping am ON ks.app_id = am.app_id
+             WHERE am.app_name = ?1
+             GROUP BY km.key_id, km.key_str
+             ORDER BY total_count DESC"
+        }
+        None => {
             "SELECT km.key_str, SUM(ks.count) as total_count
              FROM key_stats ks
              JOIN key_mapping km ON ks.key_id = km.key_id
              GROUP BY km.key_id, km.key_str
-             ORDER BY total_count DESC",
-        )
-        .map_err(|e| e.to_string())?;
+             ORDER BY total_count DESC"
+        }
+    };
 
-    let key_stats = stmt
-        .query_map([], |row| {
-            let db_key: String = row.get(0)?;
-            let converted_key = convert_key_name(&db_key);
-            Ok(KeyStat {
-                key: converted_key,
-                count: row.get(1)?,
-            })
-        })
-        .map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let key_stats = match app_name {
+        Some(app) => stmt.query_map([app], map_row),
+        None => stmt.query_map([], map_row),
+    }
+    .map_err(|e| e.to_string())?;
 
     let result: Result<Vec<KeyStat>, rusqlite::Error> = key_stats.collect();
     result.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn get_applications() -> Result<Vec<String>, String> {
+    let conn = get_db_connection().map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT app_name FROM app_mapping ORDER BY app_name")
+        .map_err(|e| e.to_string())?;
+
+    let apps = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+
+    let result: Result<Vec<String>, rusqlite::Error> = apps.collect();
+    result.map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_key_stats])
+        .invoke_handler(tauri::generate_handler![get_key_stats, get_applications])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

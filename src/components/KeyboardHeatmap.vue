@@ -17,7 +17,11 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+const props = defineProps<{
+  selectedApp: string | null;
+}>();
 
 const keyboardLayout = [
   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Del', 'Ins'],
@@ -79,12 +83,12 @@ const updateHeatData = (newData: Record<string, number>) => {
 
 const fetchKeyStats = async () => {
   try {
-    const keyStats: { key: string; count: number }[] = await invoke('get_key_stats');
+    const keyStats: { key: string; count: number }[] = await invoke('get_key_stats', { appName: props.selectedApp });
     const newHeatData: Record<string, number> = {};
     keyStats.forEach(({ key, count }) => {
       newHeatData[key] = count;
     });
-    updateHeatData(newHeatData);
+    keyHeatData.value = newHeatData;
   } catch (error) {
     console.error('Error fetching key stats:', error);
   }
@@ -94,7 +98,11 @@ onMounted(() => {
   fetchKeyStats();
 });
 
-defineExpose({ updateHeatData });
+watch(() => props.selectedApp, () => {
+  fetchKeyStats();
+});
+
+defineExpose({ fetchKeyStats });
 </script>
 
 <style scoped>
