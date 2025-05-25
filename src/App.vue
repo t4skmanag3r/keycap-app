@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto p-4 flex flex-col gap-4">
     <h1 class="text-2xl font-bold mb-4 text-white text-center">Keyboard Heatmap</h1>
-    <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :scalingMethod="scalingMethod" />
+    <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
     <div class="mb-4 flex items-center justify-center space-x-4">
       <div>
         <label for="app-select" class="mr-2 text-white">Select Application:</label>
@@ -9,6 +9,10 @@
           <option :value="null">All Applications</option>
           <option v-for="app in applications" :key="app" :value="app">{{ app }}</option>
         </select>
+      </div>
+      <div>
+        <label for="date-select" class="mr-2 text-white">Select Date:</label>
+        <input type="date" id="date-select" v-model="selectedDate" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
       </div>
       <div>
         <label for="scaling-select" class="mr-2 text-white">Scaling Method:</label>
@@ -29,6 +33,7 @@ import KeyboardHeatmap from './components/KeyboardHeatmap.vue';
 const heatmapRef = ref<InstanceType<typeof KeyboardHeatmap> | null>(null);
 
 const selectedApp = ref<string | null>(null);
+const selectedDate = ref<string | null>(null);
 const applications = ref<string[]>([]);
 const scalingMethod = ref<'linear' | 'logarithmic'>('linear');
 
@@ -51,7 +56,6 @@ onMounted(() => {
 });
 </script>
 
-
 <style>
 body {
   @apply bg-gray-900;
@@ -65,7 +69,7 @@ p {
   font-family: sans-serif;
 }
 
-select {
+select, input[type="date"] {
   @apply bg-gray-800 text-white border border-gray-700;
 }
 

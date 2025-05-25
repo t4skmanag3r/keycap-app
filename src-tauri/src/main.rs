@@ -47,11 +47,20 @@ fn map_row(row: &Row) -> Result<KeyStat, rusqlite::Error> {
 }
 
 #[tauri::command]
-fn get_key_stats(app_name: Option<String>) -> Result<Vec<KeyStat>, String> {
+fn get_key_stats(app_name: Option<String>, date: Option<String>) -> Result<Vec<KeyStat>, String> {
     let conn = get_db_connection().map_err(|e| e.to_string())?;
 
-    let query = match app_name {
-        Some(_) => {
+    let query = match (app_name.as_ref(), date.as_ref()) {
+        (Some(_), Some(_)) => {
+            "SELECT km.key_str, SUM(ks.count) as total_count
+             FROM key_stats ks
+             JOIN key_mapping km ON ks.key_id = km.key_id
+             JOIN app_mapping am ON ks.app_id = am.app_id
+             WHERE am.app_name = ?1 AND DATE(ks.date) = DATE(?2)
+             GROUP BY km.key_id, km.key_str
+             ORDER BY total_count DESC"
+        }
+        (Some(_), None) => {
             "SELECT km.key_str, SUM(ks.count) as total_count
              FROM key_stats ks
              JOIN key_mapping km ON ks.key_id = km.key_id
@@ -60,7 +69,15 @@ fn get_key_stats(app_name: Option<String>) -> Result<Vec<KeyStat>, String> {
              GROUP BY km.key_id, km.key_str
              ORDER BY total_count DESC"
         }
-        None => {
+        (None, Some(_)) => {
+            "SELECT km.key_str, SUM(ks.count) as total_count
+             FROM key_stats ks
+             JOIN key_mapping km ON ks.key_id = km.key_id
+             WHERE DATE(ks.date) = DATE(?1)
+             GROUP BY km.key_id, km.key_str
+             ORDER BY total_count DESC"
+        }
+        (None, None) => {
             "SELECT km.key_str, SUM(ks.count) as total_count
              FROM key_stats ks
              JOIN key_mapping km ON ks.key_id = km.key_id
@@ -71,9 +88,11 @@ fn get_key_stats(app_name: Option<String>) -> Result<Vec<KeyStat>, String> {
 
     let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
 
-    let key_stats = match app_name {
-        Some(app) => stmt.query_map([app], map_row),
-        None => stmt.query_map([], map_row),
+    let key_stats = match (app_name, date) {
+        (Some(app), Some(date)) => stmt.query_map([app, date], map_row),
+        (Some(app), None) => stmt.query_map([app], map_row),
+        (None, Some(date)) => stmt.query_map([date], map_row),
+        (None, None) => stmt.query_map([], map_row),
     }
     .map_err(|e| e.to_string())?;
 

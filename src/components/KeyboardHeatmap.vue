@@ -21,6 +21,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
   selectedApp: string | null;
+  selectedDate: string | null;
   scalingMethod: 'linear' | 'logarithmic';
 }>();
 
@@ -95,7 +96,10 @@ const updateHeatData = (newData: Record<string, number>) => {
 
 const fetchKeyStats = async () => {
   try {
-    const keyStats: { key: string; count: number }[] = await invoke('get_key_stats', { appName: props.selectedApp });
+    const keyStats: { key: string; count: number }[] = await invoke('get_key_stats', { 
+      appName: props.selectedApp,
+      date: props.selectedDate ? props.selectedDate : null
+    });
     const newHeatData: Record<string, number> = {};
     keyStats.forEach(({ key, count }) => {
       newHeatData[key] = count;
@@ -110,7 +114,7 @@ onMounted(() => {
   fetchKeyStats();
 });
 
-watch(() => props.selectedApp, () => {
+watch(() => [props.selectedApp, props.selectedDate], () => {
   fetchKeyStats();
 });
 
