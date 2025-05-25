@@ -1,10 +1,11 @@
 <template>
-  <div class="keyboard-heatmap">
+  <div class="keyboard-heatmap w-fit h-fit">
     <div v-for="(row, rowIndex) in keyboardLayout" :key="rowIndex" class="flex justify-center">
-      <div
+       <div
         v-for="(key, keyIndex) in row"
         :key="keyIndex"
-        class="key m-0.5 rounded text-center flex items-center justify-center"
+        :title="getKeyClickCount(key)"
+        class="key m-0.5 rounded text-center flex items-center justify-center select-none cursor-pointer"
         :class="[getKeySize(key), { 'text-xs': key.length > 1 }]"
         :style="{ backgroundColor: getHeatColor(key) }"
       >
@@ -15,16 +16,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { invoke } from '@tauri-apps/api/tauri';
+import { computed, onMounted, ref } from 'vue';
 
 const keyboardLayout = [
   ['Esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'Del', 'Ins'],
   ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Bck', 'PgUp'],
   ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\', 'PgDn'],
   ['Caps', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'Return', 'Home'],
-  ['L-Shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'R-Shift', '↑', 'End'],
-  ['L-Ctrl', 'Win', 'L-Alt', 'Space', 'R-Alt', 'Fn', 'R-Ctrl', '←', '↓', '→'],
+  ['LShift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'RShift', '↑', 'End'],
+  ['LCtrl', 'Win', 'LAlt', 'Space', 'RAlt', 'Fn', 'RCtrl', '←', '↓', '→'],
 ];
+
+const getKeyClickCount = (key: string) => {
+  const count = keyHeatData.value[key] || 0;
+  return `Clicks: ${count}`;
+};
+
 
 const keyHeatData = ref<Record<string, number>>({});
 
@@ -42,9 +50,9 @@ const getKeySize = (key: string) => {
       return 'w-14 h-10'
     case 'Return':
       return 'w-20 h-10'
-    case 'L-Shift':
+    case 'LShift':
       return 'w-20 h-10';
-    case 'R-Shift':
+    case 'RShift':
       return 'w-14 h-10';
     case 'Caps':
       return 'w-14 h-10';
@@ -52,11 +60,11 @@ const getKeySize = (key: string) => {
       return 'w-14 h-10';
     case 'Space':
       return 'w-56 h-10';
-    case 'L-Ctrl':
+    case 'LCtrl':
       return 'w-14 h-10';
     case 'Win':
       return 'w-14 h-10';
-    case 'L-Alt':
+    case 'LAlt':
       return 'w-14 h-10';
     case 'Fn':
       return 'w-10 h-10';
@@ -68,6 +76,23 @@ const getKeySize = (key: string) => {
 const updateHeatData = (newData: Record<string, number>) => {
   keyHeatData.value = newData;
 };
+
+const fetchKeyStats = async () => {
+  try {
+    const keyStats: { key: string; count: number }[] = await invoke('get_key_stats');
+    const newHeatData: Record<string, number> = {};
+    keyStats.forEach(({ key, count }) => {
+      newHeatData[key] = count;
+    });
+    updateHeatData(newHeatData);
+  } catch (error) {
+    console.error('Error fetching key stats:', error);
+  }
+};
+
+onMounted(() => {
+  fetchKeyStats();
+});
 
 defineExpose({ updateHeatData });
 </script>
