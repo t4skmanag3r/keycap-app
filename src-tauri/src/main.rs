@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-use tauri::Manager;
+use tauri::{AppHandle, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 mod daemon;
@@ -158,54 +158,64 @@ fn shutdown_app(app_handle: &tauri::AppHandle) {
     }
 }
 
+pub fn create_system_tray() -> SystemTray {
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    let tray_menu = SystemTrayMenu::new().add_item(quit);
+    SystemTray::new().with_menu(tray_menu)
+}
+
+pub fn on_system_tray_event(app: &AppHandle<Wry>, event: SystemTrayEvent) {
+    match event {
+        SystemTrayEvent::DoubleClick {
+            position: _,
+            size: _,
+            ..
+        } => {
+            let window = app.get_window("main").unwrap();
+            window.unminimize().unwrap();
+            window.show().unwrap();
+            window.set_focus().unwrap();
+        }
+        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+            "quit" => {
+                app.get_window("main").unwrap().hide().unwrap();
+
+                shutdown_app(app);
+                std::process::exit(0);
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+}
+
+fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let app_handle = app.handle();
+    start_daemon(app_handle.clone())?;
+
+    let window = app.get_window("main").unwrap();
+
+    // Handle window events
+    window.clone().on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            window.hide().unwrap();
+            api.prevent_close();
+        }
+    });
+
+    Ok(())
+}
+
 fn main() {
     // Initialize the logger
     use env_logger::{Builder, Env};
 
     Builder::from_env(Env::default().default_filter_or("debug")).init();
 
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    let tray_menu = SystemTrayMenu::new().add_item(quit);
-    let system_tray = SystemTray::new().with_menu(tray_menu);
-
     tauri::Builder::default()
-        .system_tray(system_tray)
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::LeftClick { .. } | SystemTrayEvent::DoubleClick { .. } => {
-                let window = app.get_window("main").unwrap();
-                if let Ok(is_visible) = window.is_visible() {
-                    if !is_visible {
-                        window.show().unwrap();
-                    }
-                }
-                window.unminimize().unwrap();
-                window.set_focus().unwrap();
-            }
-            SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-                "quit" => {
-                    shutdown_app(app);
-                    std::process::exit(0);
-                }
-                _ => {}
-            },
-            _ => {}
-        })
-        .setup(|app| {
-            let app_handle = app.handle();
-            start_daemon(app_handle.clone()).unwrap();
-
-            let window = app.get_window("main").unwrap();
-
-            // Handle window events
-            window.clone().on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    window.hide().unwrap();
-                    api.prevent_close();
-                }
-            });
-
-            Ok(())
-        })
+        .system_tray(create_system_tray())
+        .on_system_tray_event(on_system_tray_event)
+        .setup(setup_app)
         .invoke_handler(tauri::generate_handler![
             get_key_stats,
             get_applications,
