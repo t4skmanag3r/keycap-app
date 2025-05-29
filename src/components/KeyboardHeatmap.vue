@@ -90,10 +90,6 @@ const getKeySize = (key: string) => {
   }
 };
 
-const updateHeatData = (newData: Record<string, number>) => {
-  keyHeatData.value = newData;
-};
-
 const fetchKeyStats = async () => {
   try {
     const keyStats: { key: string; count: number }[] = await invoke('get_key_stats', { 
