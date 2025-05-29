@@ -18,6 +18,12 @@ rusqlite = { version = "0.29.0", features = ["bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "5.0"
 lazy_static = "1.4.0"
+rdev = "0.5.2"
+active-win-pos-rs = "0.8.0"
+ctrlc = "3.2"
+log = "0.4"
+env_logger = "0.11.8"
+
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

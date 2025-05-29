@@ -2,18 +2,22 @@
 
 use dirs;
 use lazy_static::lazy_static;
-use rusqlite::{Connection, Result, Row};
+use log::{error, info};
+use rusqlite::{Connection, Row};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use tauri::Manager;
 
+mod daemon;
 mod key_mapping;
 
 use key_mapping::convert_key_name;
 
 fn get_db_path() -> PathBuf {
     let mut path = dirs::data_local_dir().unwrap_or_else(|| {
-        eprintln!("Could not determine data directory, using current directory");
+        error!("Could not determine data directory, using current directory");
         std::env::current_dir().unwrap()
     });
     path.push("keycap");
@@ -115,10 +119,66 @@ fn get_applications() -> Result<Vec<String>, String> {
     let result: Result<Vec<String>, rusqlite::Error> = apps.collect();
     result.map_err(|e| e.to_string())
 }
+#[tauri::command]
+fn start_daemon(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let (shutdown_tx, shutdown_rx) = mpsc::channel();
+
+    // Store the sender in the app state
+    app_handle.manage(shutdown_tx);
+
+    // Run the daemon in a separate thread
+    let daemon_thread = thread::spawn(move || {
+        if let Err(e) = daemon::run_daemon(shutdown_rx) {
+            error!("Daemon error: {:?}", e);
+        }
+    });
+
+    // Store the daemon thread handle in the app state, wrapped in an Arc and Mutex
+    app_handle.manage(Arc::new(Mutex::new(Some(daemon_thread))));
+
+    Ok(())
+}
 
 fn main() {
+    // Initialize the logger
+    use env_logger::{Builder, Env};
+
+    Builder::from_env(Env::default().default_filter_or("debug")).init();
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_key_stats, get_applications])
+        .setup(|app| {
+            let app_handle = app.handle();
+            start_daemon(app_handle.clone()).unwrap();
+
+            let window = app.get_window("main").unwrap();
+            let app_handle_clone = app_handle.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { .. } = event {
+                    info!("Window close requested. Shutting down daemon...");
+                    if let Some(shutdown_tx) = app_handle_clone.try_state::<mpsc::Sender<()>>() {
+                        let _ = shutdown_tx.send(());
+                    }
+                    if let Some(daemon_thread) =
+                        app_handle_clone.try_state::<Arc<Mutex<Option<thread::JoinHandle<()>>>>>()
+                    {
+                        info!("Waiting for daemon to finish...");
+                        if let Some(handle) = daemon_thread.lock().unwrap().take() {
+                            if let Err(e) = handle.join() {
+                                error!("Error joining daemon thread: {:?}", e);
+                            }
+                        }
+                        info!("Daemon finished. Closing application.");
+                    }
+                }
+            });
+
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_key_stats,
+            get_applications,
+            start_daemon
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
