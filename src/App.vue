@@ -1,15 +1,16 @@
 <template>
-  <div class="container p-4 flex flex-row gap-4 justify-center min-h-screen max-w-full">
+  <div class="container flex flex-row gap-24 justify-center min-h-screen max-w-full">
     <!-- LEFT SIDEBAR -->
-     <div class="flex min-h-full w-40 bg-slate-500">
+     <div class="min-h-full w-60">
       <!-- Application counts -->
+       <AppCountBar></AppCountBar>
       <div>
       </div>
      </div>
     <!-- MIDDLE DIV -->
     <div class="min-h-full flex flex-col gap-4 flex-grow">
       <!-- TOP BAR -->
-      <div class="top-bar flex justify-center gap-4 w-full h-fit flex-row ">
+      <div class="top-bar flex justify-center gap-4 w-full h-fit flex-row mt-4">
         <button>A</button>
         <button>B</button>
         <button>C</button>
@@ -41,15 +42,15 @@
           </div>
       </div>
       <!-- BOTTOM BAR -->
-       <div class="flex w-full h-40 flex-row bg-slate-500">
+       <div class="flex w-full h-52 flex-row ">
         <!-- Date Counts -->
-        <div></div>
+        <DateCountBar></DateCountBar>
       </div>
     </div>
     <!-- RIGHT SIDEBAR -->
-     <div class="flex min-h-full w-40 bg-slate-500">
-       <div>
-       </div>
+     <div class="min-h-full w-60">
+      <!-- Click Counts -->
+       <ClickCountBar></ClickCountBar>
     </div>
     </div>
     
@@ -58,6 +59,9 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api';
 import { onMounted, ref } from 'vue';
+import AppCountBar from './components/AppCountBar.vue';
+import ClickCountBar from './components/ClickCountBar.vue';
+import DateCountBar from './components/DateCountBar.vue';
 import KeyboardHeatmap from './components/KeyboardHeatmap.vue';
 
 const heatmapRef = ref<InstanceType<typeof KeyboardHeatmap> | null>(null);
@@ -114,6 +118,6 @@ select option {
 
 <style scoped>
 .top-bar button {
-  @apply bg-gray-600 h-fit px-4 py-2 text-white rounded-md;
+  @apply bg-gray-600 h-fit px-4 py-2 text-white font-bold rounded-md;
 }
 </style>
