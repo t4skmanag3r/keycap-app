@@ -17,7 +17,11 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+const props = defineProps<{
+  resetTrigger: number;
+}>();
 
 interface DailyClickCount {
   date: string;
@@ -76,6 +80,10 @@ const formatClickCount = (count: number): string => {
     return count.toString();
   }
 };
+
+watch(() => props.resetTrigger, () => {
+  selectedDay.value = null;
+});
 
 </script>
 

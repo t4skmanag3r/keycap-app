@@ -95,6 +95,7 @@ interface AppCount {
 // Define props
 const props = defineProps<{
   selectedDate: string | null;
+  resetTrigger: number;
 }>();
 
 const apps = ref<AppCount[]>([]);
@@ -134,6 +135,10 @@ const toggleAppSelection = (appName: string) => {
     emit('updateAppFilter', appName);
   }
 };
+
+watch(() => props.resetTrigger, () => {
+  selectedApp.value = null;
+});
 
 const onBeforeLeave = (el: Element) => {
   const htmlEl = el as HTMLElement;

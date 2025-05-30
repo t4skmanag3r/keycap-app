@@ -3,18 +3,19 @@
     <!-- LEFT SIDEBAR -->
      <div class="min-h-full w-60">
       <!-- Application counts -->
-       <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" />
+       <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" :resetTrigger="resetTrigger" />
       <div>
       </div>
      </div>
     <!-- MIDDLE DIV -->
     <div class="min-h-full flex flex-col gap-4 flex-grow">
       <!-- TOP BAR -->
-      <div class="top-bar flex justify-center gap-4 w-full h-fit flex-row mt-4">
-        <button>A</button>
-        <button>B</button>
-        <button>C</button>
-        <button>D</button>
+      <div class="top-bar flex justify-center gap-4 w-full h-fit flex-row mt-8">
+        <button @click="refreshData" class="refresh-button p-0">
+          <span class="material-symbols-outlined">
+            sync
+          </span>
+        </button>
       </div>
        <!-- MAIN CONTENT -->
        <div class="flex flex-grow flex-col items-center justify-center gap-4">
@@ -33,7 +34,7 @@
       <!-- BOTTOM BAR -->
        <div class="flex w-full h-52 flex-row ">
         <!-- Date Counts -->
-        <DateCountBar @updateDayFilter="handleDayFilter"></DateCountBar>
+        <DateCountBar @updateDayFilter="handleDayFilter" :resetTrigger="resetTrigger"></DateCountBar>
       </div>
     </div>
     <!-- RIGHT SIDEBAR -->
@@ -46,8 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api';
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import AppCountBar from './components/AppCountBar.vue';
 import ClickCountBar from './components/ClickCountBar.vue';
 import DateCountBar from './components/DateCountBar.vue';
@@ -57,16 +57,9 @@ const heatmapRef = ref<InstanceType<typeof KeyboardHeatmap> | null>(null);
 
 const selectedApp = ref<string | null>(null);
 const selectedDate = ref<string | null>(null);
-const applications = ref<string[]>([]);
 const scalingMethod = ref<'linear' | 'logarithmic'>('logarithmic');
 
-const fetchApplications = async () => {
-  try {
-    applications.value = await invoke('get_applications');
-  } catch (error) {
-    console.error('Error fetching applications:', error);
-  }
-};
+const resetTrigger = ref(0);
 
 const updateHeatmap = () => {
   if (heatmapRef.value) {
@@ -82,9 +75,17 @@ const handleDayFilter = (day: string) => {
   selectedDate.value = day;
 }
 
-onMounted(() => {
-  fetchApplications();
-});
+const refreshData = () => {
+  selectedApp.value = null
+  selectedDate.value = null
+  updateHeatmap();
+  resetSelection();
+};
+
+const resetSelection = () => {
+  resetTrigger.value += 1;
+};
+
 </script>
 
 <style>
@@ -115,7 +116,7 @@ select option {
 
 <style scoped>
 .top-bar button {
-  @apply bg-gray-600 h-fit px-4 py-2 text-white font-bold rounded-md;
+  @apply bg-gray-600 h-fit p-2 flex items-center justify-center text-white font-bold rounded-md;
   @apply hover:scale-110 transition;
 }
 </style>
