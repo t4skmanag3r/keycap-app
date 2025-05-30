@@ -1,7 +1,17 @@
 <template>
-  <div class="w-full max-h-screen overflow-y-auto py-12">
-    <div class="w-full flex flex-col gap-2">
-      <div v-for="(key, index) in sorted_keys" :key="index" class="flex flex-row items-center">
+  <div class="w-full h-screen overflow-y-auto py-12 relative">
+    <transition-group 
+      name="key-list" 
+      tag="div" 
+      class="w-full flex flex-col gap-2"
+      @before-leave="onBeforeLeave"
+      @after-leave="onAfterLeave"
+    >
+      <div 
+        v-for="(key, index) in sorted_keys" 
+        :key="key.key" 
+        class="flex flex-row items-center key-list-item"
+      >
         <div class="w-full h-6 bg-gray-700 rounded-l relative overflow-hidden">
           <div 
             class="h-full bg-emerald-500 rounded-l absolute right-0 top-0"
@@ -12,7 +22,7 @@
           </span>
         </div>
       </div>
-    </div>
+    </transition-group>
   </div>
 </template>
 
@@ -54,9 +64,52 @@ const maxCount = computed(() => Math.max(...keyStats.value.map(key => key.count)
 // Watch for changes in selectedDate
 watch(() => [props.selectedApp, props.selectedDate], fetchKeyStats);
 
+const onBeforeLeave = (el: Element) => {
+  const { marginLeft, marginTop, width, height } = window.getComputedStyle(el);
+  el.style.left = `${el.offsetLeft - parseFloat(marginLeft)}px`;
+  el.style.top = `${el.offsetTop - parseFloat(marginTop)}px`;
+  el.style.width = width;
+  el.style.height = height;
+};
+
+const onAfterLeave = (el: Element) => {
+  (el as HTMLElement).style.removeProperty('left');
+  (el as HTMLElement).style.removeProperty('top');
+  (el as HTMLElement).style.removeProperty('width');
+  (el as HTMLElement).style.removeProperty('height');
+};
+
+
 </script>
 
 <style scoped>
+.key-list-item {
+  transition: all 0.5s ease;
+  position: relative;
+}
+
+.key-list-enter-active,
+.key-list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.key-list-enter-from,
+.key-list-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.key-list-move {
+  transition: transform 0.5s ease;
+}
+
+.key-list-leave-active {
+  position: absolute;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .overflow-y-auto {
   scrollbar-width: thin;
   scrollbar-color: #4a5568 #2d3748;
