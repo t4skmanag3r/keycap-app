@@ -7,7 +7,7 @@
             class="h-full bg-emerald-500 rounded-l absolute right-0 top-0"
             :style="{ width: `${(key.count / maxCount) * 100}%` }"
           ></div>
-          <span class="text-xs text-white absolute left-2 top-1/2 transform -translate-y-1/2 whitespace-nowrap">
+          <span class="text-xs text-white absolute left-2 top-1/2 transform -translate-y-1/2 whitespace-nowrap select-none">
             {{ key.key }} ({{ key.count }})
           </span>
         </div>
@@ -18,7 +18,13 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+// Define props
+const props = defineProps<{
+  selectedApp: string | null;
+  selectedDate: string | null;
+}>();
 
 interface KeyStat {
   key: string;
@@ -33,7 +39,7 @@ const sorted_keys = computed(() =>
 
 const fetchKeyStats = async () => {
   try {
-    const result = await invoke<KeyStat[]>('get_key_stats');
+    const result = await invoke<KeyStat[]>('get_key_stats', { appName: props.selectedApp,  date: props.selectedDate });
     keyStats.value = result;
   } catch (error) {
     console.error('Error fetching key stats:', error);
@@ -44,6 +50,10 @@ onMounted(fetchKeyStats);
 
 // Calculate the maximum count for scaling
 const maxCount = computed(() => Math.max(...keyStats.value.map(key => key.count)));
+
+// Watch for changes in selectedDate
+watch(() => [props.selectedApp, props.selectedDate], fetchKeyStats);
+
 </script>
 
 <style scoped>

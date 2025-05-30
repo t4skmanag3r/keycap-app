@@ -3,7 +3,7 @@
     <!-- LEFT SIDEBAR -->
      <div class="min-h-full w-60">
       <!-- Application counts -->
-       <AppCountBar></AppCountBar>
+       <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" />
       <div>
       </div>
      </div>
@@ -22,17 +22,6 @@
           <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
           <div class="flex flex-row items-center justify-center w-full gap-8">
             <div>
-              <label for="app-select" class="mr-2 text-white">Select Application:</label>
-              <select id="app-select" v-model="selectedApp" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
-                <option :value="null">All Applications</option>
-                <option v-for="app in applications" :key="app" :value="app">{{ app }}</option>
-              </select>
-            </div>
-            <div>
-              <label for="date-select" class="mr-2 text-white">Select Date:</label>
-              <input type="date" id="date-select" v-model="selectedDate" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
-            </div>
-            <div>
               <label for="scaling-select" class="mr-2 text-white">Scaling Method:</label>
               <select id="scaling-select" v-model="scalingMethod" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
                 <option value="linear">Linear</option>
@@ -44,13 +33,13 @@
       <!-- BOTTOM BAR -->
        <div class="flex w-full h-52 flex-row ">
         <!-- Date Counts -->
-        <DateCountBar></DateCountBar>
+        <DateCountBar @updateDayFilter="handleDayFilter"></DateCountBar>
       </div>
     </div>
     <!-- RIGHT SIDEBAR -->
      <div class="min-h-full w-60">
       <!-- Click Counts -->
-       <ClickCountBar></ClickCountBar>
+       <ClickCountBar :selectedApp="selectedApp" :selectedDate="selectedDate"></ClickCountBar>
     </div>
     </div>
     
@@ -69,7 +58,7 @@ const heatmapRef = ref<InstanceType<typeof KeyboardHeatmap> | null>(null);
 const selectedApp = ref<string | null>(null);
 const selectedDate = ref<string | null>(null);
 const applications = ref<string[]>([]);
-const scalingMethod = ref<'linear' | 'logarithmic'>('linear');
+const scalingMethod = ref<'linear' | 'logarithmic'>('logarithmic');
 
 const fetchApplications = async () => {
   try {
@@ -84,6 +73,14 @@ const updateHeatmap = () => {
     heatmapRef.value.fetchKeyStats();
   }
 };
+
+const handleAppFilter = (appName: string) => {
+  selectedApp.value = appName;
+};
+
+const handleDayFilter = (day: string) => {
+  selectedDate.value = day;
+}
 
 onMounted(() => {
   fetchApplications();
@@ -119,5 +116,6 @@ select option {
 <style scoped>
 .top-bar button {
   @apply bg-gray-600 h-fit px-4 py-2 text-white font-bold rounded-md;
+  @apply hover:scale-110 transition;
 }
 </style>

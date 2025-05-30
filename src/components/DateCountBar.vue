@@ -1,11 +1,15 @@
 <template>
   <div class="w-full flex flex-row gap-0 overflow-x-auto justify-end pt-4">
-    <div v-for="(day, index) in sorted_days" :key="index" class="flex flex-col justify-end items-center">
-        <span class="text-xs text-white transform -rotate-30 origin-top-left whitespace-nowrap">
+    <div v-for="(day, index) in sorted_days" :key="index" class="flex flex-col justify-end items-center cursor-pointer" @click="toggleDaySelection(day.date)" >
+        <span class="text-xs text-white transform -rotate-30 origin-top-left whitespace-nowrap select-none">
           {{ formatDate(day.date) }}
         </span>
-      <div class="h-full w-6 bg-emerald-500 rounded-t"
-      :style="{ height: `${(day.click_count / maxCount) * 100}%` }">
+      <div class="h-full w-6 bg-emerald-500 rounded-t hover:bg-emerald-400 relative"
+      :style="{ height: `${(day.click_count / maxCount) * 100}%` }"
+      :class="{ 'ring-2 ring-amber-500': selectedDay === day.date }">
+        <span class="absolute bottom-0 left-0 right-0 text-xs text-white vertical-text select-none">
+          {{ formatClickCount(day.click_count) }}
+        </span>
       </div>
     </div>
   </div>
@@ -21,6 +25,8 @@ interface DailyClickCount {
 }
 
 const days = ref<DailyClickCount[]>([]);
+
+const selectedDay = ref<string | null>(null);
 
 const sorted_days = computed(() => 
   [...days.value].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -45,6 +51,32 @@ const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
+
+// Function to handle day selection and deselection
+const toggleDaySelection = (day: string) => {
+  if (selectedDay.value === day) {
+    selectedDay.value = null;
+    emit('updateDayFilter', null);
+  } else {
+    selectedDay.value = day;
+    emit('updateDayFilter', day);
+  }
+};
+
+// Define emits
+const emit = defineEmits(['updateDayFilter']);
+
+// Function to format the click count
+const formatClickCount = (count: number): string => {
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(1) + 'M';
+  } else if (count >= 1000) {
+    return (count / 1000).toFixed(1) + 'K';
+  } else {
+    return count.toString();
+  }
+};
+
 </script>
 
 <style scoped>
@@ -71,5 +103,15 @@ const formatDate = (dateString: string) => {
 .overflow-x-auto::-webkit-scrollbar-thumb {
   background-color: #4a5568;
   border-radius: 4px;
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

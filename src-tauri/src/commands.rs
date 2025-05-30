@@ -108,27 +108,41 @@ pub struct AppCount {
 }
 
 #[tauri::command]
-pub fn get_app_counts() -> Result<Vec<AppCount>, String> {
+pub fn get_app_counts(date: Option<String>) -> Result<Vec<AppCount>, String> {
     let conn = get_db_connection().map_err(|e| e.to_string())?;
 
-    let mut stmt = conn
-        .prepare(
+    let query = match date.as_ref() {
+        Some(_) => {
+            "SELECT am.app_name, SUM(ks.count) as total_count
+             FROM app_mapping am
+             JOIN key_stats ks ON am.app_id = ks.app_id
+             WHERE DATE(ks.date) = DATE(?1)
+             GROUP BY am.app_name
+             ORDER BY am.app_name"
+        }
+        None => {
             "SELECT am.app_name, SUM(ks.count) as total_count
              FROM app_mapping am
              JOIN key_stats ks ON am.app_id = ks.app_id
              GROUP BY am.app_name
-             ORDER BY am.app_name",
-        )
-        .map_err(|e| e.to_string())?;
+             ORDER BY am.app_name"
+        }
+    };
 
-    let app_counts = stmt
-        .query_map([], |row| {
-            Ok(AppCount {
-                app_name: row.get(0)?,
-                click_count: row.get(1)?,
-            })
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let map_fn = |row: &Row| -> Result<AppCount, rusqlite::Error> {
+        Ok(AppCount {
+            app_name: row.get(0)?,
+            click_count: row.get(1)?,
         })
-        .map_err(|e| e.to_string())?;
+    };
+
+    let app_counts = match date {
+        Some(date) => stmt.query_map([date], map_fn),
+        None => stmt.query_map([], map_fn),
+    }
+    .map_err(|e| e.to_string())?;
 
     let result: Result<Vec<AppCount>, rusqlite::Error> = app_counts.collect();
     result.map_err(|e| e.to_string())
