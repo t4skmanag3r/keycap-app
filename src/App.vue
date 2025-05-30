@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto p-4 flex flex-col gap-4">
+  <div class="container mx-auto p-4 flex flex-col gap-4 items-center justify-center min-h-screen">
     <h1 class="text-2xl font-bold mb-4 text-white text-center">Keyboard Heatmap</h1>
     <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
     <div class="mb-4 flex items-center justify-center space-x-4">
@@ -57,6 +57,10 @@ onMounted(() => {
 </script>
 
 <style>
+#app {
+  @apply min-h-screen;
+}
+
 body {
   @apply bg-gray-900;
 }
