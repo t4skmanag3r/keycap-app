@@ -8,7 +8,7 @@
       @after-leave="onAfterLeave"
     >
       <div 
-        v-for="(key, index) in sorted_keys" 
+        v-for="(key, _) in sorted_keys" 
         :key="key.key" 
         class="flex flex-row items-center key-list-item"
       >
@@ -65,20 +65,21 @@ const maxCount = computed(() => Math.max(...keyStats.value.map(key => key.count)
 watch(() => [props.selectedApp, props.selectedDate], fetchKeyStats);
 
 const onBeforeLeave = (el: Element) => {
-  const { marginLeft, marginTop, width, height } = window.getComputedStyle(el);
-  el.style.left = `${el.offsetLeft - parseFloat(marginLeft)}px`;
-  el.style.top = `${el.offsetTop - parseFloat(marginTop)}px`;
-  el.style.width = width;
-  el.style.height = height;
+  const htmlEl = el as HTMLElement;
+  const { marginLeft, marginTop, width, height } = window.getComputedStyle(htmlEl);
+  htmlEl.style.left = `${htmlEl.offsetLeft - parseFloat(marginLeft)}px`;
+  htmlEl.style.top = `${htmlEl.offsetTop - parseFloat(marginTop)}px`;
+  htmlEl.style.width = width;
+  htmlEl.style.height = height;
 };
 
 const onAfterLeave = (el: Element) => {
-  (el as HTMLElement).style.removeProperty('left');
-  (el as HTMLElement).style.removeProperty('top');
-  (el as HTMLElement).style.removeProperty('width');
-  (el as HTMLElement).style.removeProperty('height');
+  const htmlEl = el as HTMLElement;
+  htmlEl.style.removeProperty('left');
+  htmlEl.style.removeProperty('top');
+  htmlEl.style.removeProperty('width');
+  htmlEl.style.removeProperty('height');
 };
-
 
 </script>
 

@@ -8,7 +8,7 @@
       @after-leave="onAfterLeave"
     >
       <div 
-        v-for="(app, index) in sorted_apps" 
+        v-for="(app, _) in sorted_apps" 
         :key="app.app_name" 
         class="flex flex-row items-center cursor-pointer app-list-item"
         @click="toggleAppSelection(app.app_name)"
@@ -135,20 +135,21 @@ const toggleAppSelection = (appName: string) => {
   }
 };
 
-// Add these new functions for animation hooks
 const onBeforeLeave = (el: Element) => {
-  const { marginLeft, marginTop, width, height } = window.getComputedStyle(el);
-  el.style.left = `${el.offsetLeft - parseFloat(marginLeft)}px`;
-  el.style.top = `${el.offsetTop - parseFloat(marginTop)}px`;
-  el.style.width = width;
-  el.style.height = height;
+  const htmlEl = el as HTMLElement;
+  const { marginLeft, marginTop, width, height } = window.getComputedStyle(htmlEl);
+  htmlEl.style.left = `${htmlEl.offsetLeft - parseFloat(marginLeft)}px`;
+  htmlEl.style.top = `${htmlEl.offsetTop - parseFloat(marginTop)}px`;
+  htmlEl.style.width = width;
+  htmlEl.style.height = height;
 };
 
 const onAfterLeave = (el: Element) => {
-  (el as HTMLElement).style.removeProperty('left');
-  (el as HTMLElement).style.removeProperty('top');
-  (el as HTMLElement).style.removeProperty('width');
-  (el as HTMLElement).style.removeProperty('height');
+  const htmlEl = el as HTMLElement;
+  htmlEl.style.removeProperty('left');
+  htmlEl.style.removeProperty('top');
+  htmlEl.style.removeProperty('width');
+  htmlEl.style.removeProperty('height');
 };
 
 </script>
