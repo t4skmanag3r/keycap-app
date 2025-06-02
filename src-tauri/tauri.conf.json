@@ -20,13 +20,28 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "process": {
+        "all": false,
+        "exit": true,
+        "relaunch": false,
+        "relaunchDangerousAllowSymlinkMacos": false
       }
+    },
+    "cli": {
+      "args": [
+        {
+          "name": "autolaunch",
+          "short": "a",
+          "takesValue": false
+        }
+      ]
     },
     "windows": [
       {
-        "title": "keycap-app",
-        "width": 800,
-        "height": 600
+        "title": "keycap",
+        "width": 1400,
+        "height": 750
       }
     ],
     "security": {

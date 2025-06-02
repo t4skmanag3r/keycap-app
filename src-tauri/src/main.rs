@@ -2,8 +2,9 @@
 
 use log::{error, info};
 
+use auto_launch::AutoLaunch;
 use std::sync::{mpsc, Arc, Mutex};
-use std::thread;
+use std::{env, thread};
 use tauri::{AppHandle, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
@@ -82,11 +83,37 @@ pub fn on_system_tray_event(app: &AppHandle<Wry>, event: SystemTrayEvent) {
     }
 }
 
+struct AutoLaunchManager(AutoLaunch);
+
+#[tauri::command]
+fn toggle_autostart(app_handle: tauri::AppHandle, enable: bool) -> Result<(), String> {
+    let auto_launch = app_handle.state::<AutoLaunchManager>();
+    if enable {
+        auto_launch.0.enable().map_err(|e| e.to_string())?;
+    } else {
+        auto_launch.0.disable().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn is_autostart_enabled(app_handle: tauri::AppHandle) -> Result<bool, String> {
+    let auto_launch = app_handle.state::<AutoLaunchManager>();
+    auto_launch.0.is_enabled().map_err(|e| e.to_string())
+}
+
 fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let app_handle = app.handle();
     start_daemon(app_handle.clone())?;
 
     let window = app.get_window("main").unwrap();
+
+    // Check if the app was launched with the --autolaunch argument
+    let args: Vec<String> = env::args().collect();
+    if args.contains(&"--autolaunch".to_string()) {
+        // If it was autolaunch, hide the window
+        window.hide()?;
+    }
 
     // Handle window events
     window.clone().on_window_event(move |event| {
@@ -103,17 +130,29 @@ fn main() {
     // Initialize the logger
     use env_logger::{Builder, Env};
 
-    Builder::from_env(Env::default().default_filter_or("debug")).init();
+    let current_exe = std::env::current_exe().expect("Failed to get current executable path");
+    let current_exe_str = current_exe
+        .to_str()
+        .expect("Failed to convert path to string");
+
+    let auto_launch = AutoLaunch::new("keycap-app", current_exe_str, &["--autolaunch"]);
+
+    Builder::from_env(Env::default().default_filter_or("info")).init();
 
     tauri::Builder::default()
         .system_tray(create_system_tray())
         .on_system_tray_event(on_system_tray_event)
-        .setup(setup_app)
+        .setup(|app| {
+            app.manage(AutoLaunchManager(auto_launch));
+            setup_app(app)
+        })
         .invoke_handler(tauri::generate_handler![
             get_key_stats,
             get_app_counts,
             get_daily_click_counts,
-            start_daemon
+            start_daemon,
+            toggle_autostart,
+            is_autostart_enabled
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
