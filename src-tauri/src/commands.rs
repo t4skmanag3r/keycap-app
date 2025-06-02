@@ -101,18 +101,81 @@ pub fn get_key_stats(
     result.map_err(|e| e.to_string())
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AppCount {
+    app_name: String,
+    click_count: i64,
+}
+
 #[tauri::command]
-pub fn get_applications() -> Result<Vec<String>, String> {
+pub fn get_app_counts(date: Option<String>) -> Result<Vec<AppCount>, String> {
+    let conn = get_db_connection().map_err(|e| e.to_string())?;
+
+    let query = match date.as_ref() {
+        Some(_) => {
+            "SELECT am.app_name, SUM(ks.count) as total_count
+             FROM app_mapping am
+             JOIN key_stats ks ON am.app_id = ks.app_id
+             WHERE DATE(ks.date) = DATE(?1)
+             GROUP BY am.app_name
+             ORDER BY am.app_name"
+        }
+        None => {
+            "SELECT am.app_name, SUM(ks.count) as total_count
+             FROM app_mapping am
+             JOIN key_stats ks ON am.app_id = ks.app_id
+             GROUP BY am.app_name
+             ORDER BY am.app_name"
+        }
+    };
+
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let map_fn = |row: &Row| -> Result<AppCount, rusqlite::Error> {
+        Ok(AppCount {
+            app_name: row.get(0)?,
+            click_count: row.get(1)?,
+        })
+    };
+
+    let app_counts = match date {
+        Some(date) => stmt.query_map([date], map_fn),
+        None => stmt.query_map([], map_fn),
+    }
+    .map_err(|e| e.to_string())?;
+
+    let result: Result<Vec<AppCount>, rusqlite::Error> = app_counts.collect();
+    result.map_err(|e| e.to_string())
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DailyClickCount {
+    date: String,
+    click_count: i64,
+}
+
+#[tauri::command]
+pub fn get_daily_click_counts() -> Result<Vec<DailyClickCount>, String> {
     let conn = get_db_connection().map_err(|e| e.to_string())?;
 
     let mut stmt = conn
-        .prepare("SELECT DISTINCT app_name FROM app_mapping ORDER BY app_name")
+        .prepare(
+            "SELECT DATE(date) as day, SUM(count) as total_count
+             FROM key_stats
+             GROUP BY day
+             ORDER BY day DESC",
+        )
         .map_err(|e| e.to_string())?;
 
-    let apps = stmt
-        .query_map([], |row| row.get(0))
+    let daily_counts = stmt
+        .query_map([], |row| {
+            Ok(DailyClickCount {
+                date: row.get(0)?,
+                click_count: row.get(1)?,
+            })
+        })
         .map_err(|e| e.to_string())?;
 
-    let result: Result<Vec<String>, rusqlite::Error> = apps.collect();
+    let result: Result<Vec<DailyClickCount>, rusqlite::Error> = daily_counts.collect();
     result.map_err(|e| e.to_string())
 }

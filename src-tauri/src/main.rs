@@ -11,7 +11,7 @@ mod commands;
 mod daemon;
 mod key_mapping;
 
-use commands::{get_applications, get_key_stats};
+use commands::{get_app_counts, get_daily_click_counts, get_key_stats};
 
 #[tauri::command]
 fn start_daemon(app_handle: tauri::AppHandle) -> Result<(), String> {
@@ -111,7 +111,8 @@ fn main() {
         .setup(setup_app)
         .invoke_handler(tauri::generate_handler![
             get_key_stats,
-            get_applications,
+            get_app_counts,
+            get_daily_click_counts,
             start_daemon
         ])
         .run(tauri::generate_context!())
