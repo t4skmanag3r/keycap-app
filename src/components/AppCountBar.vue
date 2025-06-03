@@ -1,5 +1,6 @@
 <template>
-  <div class="w-full h-screen overflow-y-auto py-12">
+  <div class="w-full h-screen overflow-y-auto relative">
+    <h2 class="text-lg font-bold text-white my-4 ml-2">Application Counts</h2>
     <transition-group 
       name="app-list" 
       tag="div" 

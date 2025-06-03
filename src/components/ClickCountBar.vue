@@ -1,5 +1,6 @@
 <template>
-  <div class="w-full h-screen overflow-y-auto py-12 relative">
+  <div class="w-full h-screen overflow-y-auto relative">
+    <h2 class="text-lg font-bold text-white my-4 ml-2">Click Counts</h2>
     <transition-group 
       name="key-list" 
       tag="div" 
