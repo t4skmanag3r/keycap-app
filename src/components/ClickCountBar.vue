@@ -1,5 +1,5 @@
 <template>
-  <div class="w-60 h-screen overflow-y-auto relative"> <!-- Changed from w-full to w-60 -->
+  <div class="w-60 h-screen overflow-y-auto relative overflow-x-hidden">
     <div class="flex justify-end gap-2 items-center my-4 mx-2">
       <button @click="toggleSidebar" class="text-white flex items-center justify-center p-2 rounded hover:bg-gray-700 transition-colors duration-200">
         <span class="material-symbols-outlined">
@@ -22,7 +22,7 @@
         :key="key.key" 
         class="flex flex-row items-center key-list-item"
       >
-        <div class="w-full h-6 bg-gray-700 rounded-l relative overflow-hidden">
+        <div class="w-full h-6 bg-gray-700 rounded-l relative overflow-hidded">
           <div 
             class="h-full bg-emerald-500 rounded-l absolute right-0 top-0"
             :style="{ width: `${(key.count / maxCount) * 100}%` }"

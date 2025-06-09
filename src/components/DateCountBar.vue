@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-row gap-0 overflow-x-auto justify-end pt-4">
+  <div class="w-full flex flex-row gap-0 overflow-x-auto overflow-y-hidden justify-end pt-4">
     <div v-for="(day, index) in sorted_days" :key="index" class="flex flex-col justify-end items-center cursor-pointer" @click="toggleDaySelection(day.date)" >
         <span class="text-xs text-white transform -rotate-30 origin-top-left whitespace-nowrap select-none">
           {{ formatDate(day.date) }}

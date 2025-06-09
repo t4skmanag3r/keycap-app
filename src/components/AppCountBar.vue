@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen overflow-y-auto relative">
+  <div class="w-full h-screen overflow-y-auto relative overflow-x-hidden">
     <div class="flex justify-start gap-2 items-center my-4 mx-2">
       <h2 class="text-lg font-bold text-white select-none">Application Counts</h2>
       <button @click="toggleSidebar" class="flex items-center justify-center text-white p-2 rounded hover:bg-gray-700 transition-colors duration-200">
