@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen max-w-full relative">
     <!-- LEFT SIDEBAR -->
-    <div v-if="showHeatmap" class="sidebar left-sidebar">
+    <div v-if="showHeatmap" class="sidebar left-sidebar pointer-events-none">
       <!-- Application counts -->
       <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" :resetTrigger="resetTrigger" />
     </div>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- RIGHT SIDEBAR -->
-    <div v-if="showHeatmap" class="sidebar right-sidebar">
+    <div v-if="showHeatmap" class="sidebar right-sidebar pointer-events-none">
       <!-- Click Counts -->
       <ClickCountBar :selectedApp="selectedApp" :selectedDate="selectedDate"></ClickCountBar>
     </div>

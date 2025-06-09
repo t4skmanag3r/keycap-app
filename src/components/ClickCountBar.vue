@@ -2,7 +2,7 @@
   <div class="w-60 h-screen overflow-y-auto relative overflow-x-hidden">
     <div class="flex justify-end gap-2 items-center my-4 mx-2">
       <button @click="toggleSidebar" class="text-white flex items-center justify-center p-2 rounded hover:bg-gray-700 transition-colors duration-200">
-        <span class="material-symbols-outlined">
+        <span class="material-symbols-outlined pointer-events-auto">
           {{ isSidebarOpen ? 'chevron_right' : 'chevron_left' }}
         </span>
       </button>
@@ -13,7 +13,7 @@
         <transition-group 
           name="key-list" 
           tag="div" 
-          class="w-full flex flex-col gap-2"
+          class="w-full flex flex-col gap-2 pointer-events-auto"
           @before-leave="onBeforeLeave"
           @after-leave="onAfterLeave"
         >
