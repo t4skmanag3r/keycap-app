@@ -1,12 +1,12 @@
 <template>
-  <div class="w-full flex flex-row gap-0 overflow-x-auto overflow-y-hidden justify-end pt-4">
-    <div v-for="(day, index) in sorted_days" :key="index" class="flex flex-col justify-end items-center cursor-pointer" @click="toggleDaySelection(day.date)" >
-        <span class="text-xs text-white transform -rotate-30 origin-top-left whitespace-nowrap select-none">
-          {{ formatDate(day.date) }}
-        </span>
+  <div class="w-full flex flex-row gap-2 overflow-x-auto overflow-y-hidden justify-end pt-4">
+    <div v-for="(day, index) in sorted_days" :key="index" class="flex flex-col justify-end items-center cursor-pointer relative" @click="toggleDaySelection(day.date)">
+      <span class="text-xs z-10 text-white transform -rotate-30 origin-top-left whitespace-nowrap select-none absolute top-2 -left-1">
+        {{ formatDate(day.date) }}
+      </span>
       <div class="h-full w-6 bg-emerald-500 rounded-t hover:bg-emerald-400 relative"
-      :style="{ height: `${(day.click_count / maxCount) * 100}%` }"
-      :class="{ 'ring-2 ring-amber-500': selectedDay === day.date }">
+           :style="{ height: `${(day.click_count / maxCount) * 100}%` }"
+           :class="{ 'ring-2 ring-amber-500': selectedDay === day.date }">
         <span class="absolute bottom-0 left-0 right-0 text-xs text-white vertical-text select-none">
           {{ formatClickCount(day.click_count) }}
         </span>
@@ -89,7 +89,7 @@ watch(() => props.resetTrigger, () => {
 
 <style scoped>
 .transform {
-  transform: rotate(-30deg);
+  transform: rotate(-35deg);
 }
 .origin-top-left {
   transform-origin: top left;
