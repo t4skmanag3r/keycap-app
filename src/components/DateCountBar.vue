@@ -21,6 +21,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
   resetTrigger: number;
+  selectedApp: string | null;
 }>();
 
 interface DailyClickCount {
@@ -38,7 +39,7 @@ const sorted_days = computed(() =>
 
 const fetchDailyClickCounts = async () => {
   try {
-    const result = await invoke<DailyClickCount[]>('get_daily_click_counts');
+    const result = await invoke<DailyClickCount[]>('get_daily_click_counts', { appName: props.selectedApp });
     days.value = result;
   } catch (error) {
     console.error('Error fetching daily click counts:', error);
@@ -46,6 +47,8 @@ const fetchDailyClickCounts = async () => {
 };
 
 onMounted(fetchDailyClickCounts);
+
+watch(() => props.selectedApp, fetchDailyClickCounts);
 
 // Calculate the maximum count for scaling
 const maxCount = computed(() => Math.max(...days.value.map(day => day.click_count)));

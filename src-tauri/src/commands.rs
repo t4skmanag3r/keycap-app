@@ -155,27 +155,74 @@ pub struct DailyClickCount {
 }
 
 #[tauri::command]
-pub fn get_daily_click_counts() -> Result<Vec<DailyClickCount>, String> {
+pub fn get_daily_click_counts(app_name: Option<String>) -> Result<Vec<DailyClickCount>, String> {
     let conn = get_db_connection().map_err(|e| e.to_string())?;
 
-    let mut stmt = conn
-        .prepare(
+    let date_range_query = "
+        SELECT DATE(MIN(date)) as start_date, DATE(MAX(date)) as end_date
+        FROM key_stats
+    ";
+    let mut date_range_stmt = conn.prepare(date_range_query).map_err(|e| e.to_string())?;
+    let (start_date, end_date): (String, String) = date_range_stmt
+        .query_row([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| e.to_string())?;
+
+    // Generate all dates within the range
+    let all_dates_query = "
+        WITH RECURSIVE date_range(date) AS (
+            SELECT DATE(?)
+            UNION ALL
+            SELECT DATE(date, '+1 day')
+            FROM date_range
+            WHERE date < DATE(?)
+        )
+        SELECT date FROM date_range
+    ";
+    let mut all_dates_stmt = conn.prepare(all_dates_query).map_err(|e| e.to_string())?;
+    let all_dates: Vec<String> = all_dates_stmt
+        .query_map([&start_date, &end_date], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?;
+
+    let query = match app_name {
+        Some(_) => {
+            "SELECT DATE(ks.date) as day, SUM(ks.count) as total_count
+             FROM key_stats ks
+             JOIN app_mapping am ON ks.app_id = am.app_id
+             WHERE am.app_name = ?1
+             GROUP BY day"
+        }
+        None => {
             "SELECT DATE(date) as day, SUM(count) as total_count
              FROM key_stats
-             GROUP BY day
-             ORDER BY day DESC",
-        )
-        .map_err(|e| e.to_string())?;
+             GROUP BY day"
+        }
+    };
 
-    let daily_counts = stmt
-        .query_map([], |row| {
-            Ok(DailyClickCount {
-                date: row.get(0)?,
-                click_count: row.get(1)?,
-            })
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let click_counts: std::collections::HashMap<String, i64> = match app_name {
+        Some(app) => stmt
+            .query_map([app], |row| Ok((row.get(0)?, row.get(1)?)))
+            .map_err(|e| e.to_string())?
+            .collect::<Result<_, _>>()
+            .map_err(|e| e.to_string())?,
+        None => stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .map_err(|e| e.to_string())?
+            .collect::<Result<_, _>>()
+            .map_err(|e| e.to_string())?,
+    };
+
+    // Combine all dates with click counts
+    let result: Vec<DailyClickCount> = all_dates
+        .into_iter()
+        .map(|date| DailyClickCount {
+            date: date.clone(),
+            click_count: *click_counts.get(&date).unwrap_or(&0),
         })
-        .map_err(|e| e.to_string())?;
+        .collect();
 
-    let result: Result<Vec<DailyClickCount>, rusqlite::Error> = daily_counts.collect();
-    result.map_err(|e| e.to_string())
+    Ok(result)
 }
