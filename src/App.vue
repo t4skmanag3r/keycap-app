@@ -173,7 +173,7 @@ select option {
 }
 
 .bottom-bar {
-  @apply w-full sm:w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 mx-auto;
+  @apply w-full sm:w-11/12 md:w-10/12 lg:w-9/12 2xl:w-full mx-auto;
 }
 
 </style>

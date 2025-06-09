@@ -139,7 +139,7 @@ const toggleSidebar = () => {
 };
 
 const checkScreenSize = () => {
-  isSidebarOpen.value = window.innerWidth >= 1200;
+  isSidebarOpen.value = window.innerWidth >= 1240;
 };
 
 onMounted(() => {

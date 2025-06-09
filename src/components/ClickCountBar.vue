@@ -71,7 +71,7 @@ const fetchKeyStats = async () => {
 const isSidebarOpen = ref(true);
 
 const checkScreenSize = () => {
-  isSidebarOpen.value = window.innerWidth >= 1200;
+  isSidebarOpen.value = window.innerWidth >= 1240;
 };
 
 const toggleSidebar = () => {
