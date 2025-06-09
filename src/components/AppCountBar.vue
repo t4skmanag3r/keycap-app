@@ -2,7 +2,7 @@
   <div class="w-full h-screen overflow-y-auto relative overflow-x-hidden">
     <div class="flex justify-start gap-2 items-center my-4 mx-2">
       <h2 class="text-lg font-bold text-white select-none">Application Counts</h2>
-      <button @click="toggleSidebar" class="flex items-center justify-center text-white p-2 rounded hover:bg-gray-700 transition-colors duration-200">
+      <button @click="toggleSidebar" class="flex items-center justify-center text-white p-2 rounded hover:bg-gray-700 transition-colors duration-200 pointer-events-auto">
         <span class="material-symbols-outlined">
           {{ isSidebarOpen ? 'chevron_left' : 'chevron_right' }}
         </span>
@@ -13,7 +13,7 @@
         <transition-group 
           name="app-list" 
           tag="div" 
-          class="w-full flex flex-col gap-2"
+          class="w-full flex flex-col gap-2 pointer-events-auto"
           @before-leave="onBeforeLeave"
           @after-leave="onAfterLeave"
         >
