@@ -1,19 +1,28 @@
 <template>
   <div class="w-full h-screen overflow-y-auto relative">
-    <h2 class="text-lg font-bold text-white my-4 ml-2">Application Counts</h2>
-    <transition-group 
-      name="app-list" 
-      tag="div" 
-      class="w-full flex flex-col gap-2"
-      @before-leave="onBeforeLeave"
-      @after-leave="onAfterLeave"
-    >
-      <div 
-        v-for="(app, _) in sorted_apps" 
-        :key="app.app_name" 
-        class="flex flex-row items-center cursor-pointer app-list-item"
-        @click="toggleAppSelection(app.app_name)"
-      >
+    <div class="flex justify-start gap-2 items-center my-4 mx-2">
+      <h2 class="text-lg font-bold text-white select-none">Application Counts</h2>
+      <button @click="toggleSidebar" class="flex items-center justify-center text-white p-2 rounded hover:bg-gray-700 transition-colors duration-200">
+        <span class="material-symbols-outlined">
+          {{ isSidebarOpen ? 'chevron_left' : 'chevron_right' }}
+        </span>
+      </button>
+    </div>
+    <transition name="sidebar">
+      <div v-if="isSidebarOpen" class="sidebar-content">
+        <transition-group 
+          name="app-list" 
+          tag="div" 
+          class="w-full flex flex-col gap-2"
+          @before-leave="onBeforeLeave"
+          @after-leave="onAfterLeave"
+        >
+        <div 
+          v-for="(app, _) in sorted_apps" 
+          :key="app.app_name" 
+          class="flex flex-row items-center cursor-pointer app-list-item"
+          @click="toggleAppSelection(app.app_name)"
+        >
         <div class="w-full h-6 bg-gray-700 hover:bg-gray-600 rounded-r relative overflow-hidden"
              :class="{ 'ring-2 ring-amber-500 bg-gray-600': selectedApp === app.app_name }">
           <div 
@@ -25,7 +34,9 @@
           </span>
         </div>
       </div>
-    </transition-group>
+      </transition-group>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -82,11 +93,30 @@
   background-color: #4a5568;
   border-radius: 4px;
 }
+
+.sidebar-content {
+  transition: all 0.3s ease-in-out;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sidebar-enter-from,
+.sidebar-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.sidebar-enter-to,
+.sidebar-leave-from {
+  transform: translateX(0);
+  opacity: 1;
+}
+
 </style>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 interface AppCount {
   app_name: string;
@@ -101,6 +131,26 @@ const props = defineProps<{
 
 const apps = ref<AppCount[]>([]);
 const selectedApp = ref<string | null>(null);
+
+const isSidebarOpen = ref(true);
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const checkScreenSize = () => {
+  isSidebarOpen.value = window.innerWidth >= 1200;
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize);
+});
+
 
 const sorted_apps = computed(() => 
   [...apps.value].sort((a, b) => b.click_count - a.click_count)
@@ -124,7 +174,7 @@ watch(() => props.selectedDate, fetchAppCounts);
 const maxCount = computed(() => Math.max(...apps.value.map(app => app.click_count)));
 
 // Define emits
-const emit = defineEmits(['updateAppFilter']);
+const emit = defineEmits(['updateAppFilter', 'sidebarToggled']);
 
 // Function to handle app selection and deselection
 const toggleAppSelection = (appName: string) => {

@@ -1,20 +1,15 @@
 <template>
   <div class="flex min-h-screen max-w-full relative">
     <!-- LEFT SIDEBAR -->
-    <transition name="slide-left">
-      <div v-if="showHeatmap && leftSidebarOpen" class="sidebar left-sidebar">
-        <!-- Application counts -->
-        <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" :resetTrigger="resetTrigger" />
-      </div>
-    </transition>
+    <div v-if="showHeatmap" class="sidebar left-sidebar">
+      <!-- Application counts -->
+      <AppCountBar :selectedDate="selectedDate" @updateAppFilter="handleAppFilter" :resetTrigger="resetTrigger" />
+    </div>
 
     <!-- MAIN CONTENT -->
-    <div class="flex-grow flex flex-col transition-all duration-300" :class="contentClass">
+    <div class="flex-grow flex flex-col min-h-screen w-full transition-all duration-300">
       <!-- TOP BAR -->
-      <div class="top-bar flex items-center w-full h-fit flex-row p-4" :class="{'justify-center': showSettings, 'justify-between': showHeatmap}">
-        <button v-if="showHeatmap" @click="toggleLeftSidebar" class="sidebar-toggle">
-          <span class="material-symbols-outlined">{{ leftSidebarOpen ? 'chevron_left' : 'chevron_right' }}</span>
-        </button>
+      <div class="top-bar flex items-center justify-center w-full h-fit flex-row p-4">
         <div class="flex gap-4">
           <button @click="toggleShowHeatmap" class="home-button p-2">
             <span class="material-symbols-outlined">home</span>
@@ -26,23 +21,31 @@
             <span class="material-symbols-outlined">settings</span>
           </button>
         </div>
-        <button v-if="showHeatmap" @click="toggleRightSidebar" class="sidebar-toggle">
-          <span class="material-symbols-outlined">{{ rightSidebarOpen ? 'chevron_right' : 'chevron_left' }}</span>
-        </button>
       </div>
 
-      <!-- MAIN CONTENT -->
-      <div v-if="showHeatmap" class="flex flex-grow flex-col items-center justify-center gap-4 p-4">
-        <h1 class="text-2xl font-bold mb-4 text-white text-center">Keyboard Heatmap</h1>
-        <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
-        <div class="flex flex-row items-center justify-center w-full gap-8">
-          <div>
-            <label for="scaling-select" class="mr-2 text-white">Scaling Method:</label>
-            <select id="scaling-select" v-model="scalingMethod" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
-              <option value="linear">Linear</option>
-              <option value="logarithmic">Logarithmic</option>
-            </select>
+      <!-- HEATMAP AND DATE BAR -->
+      <div class="flex flex-col flex-grow items-center w-full max-w-5xl mx-auto px-4">
+        <!-- MAIN CONTENT -->
+        <div v-if="showHeatmap" class="flex flex-col items-center justify-center gap-4 w-full flex-grow">
+          <h1 class="text-2xl font-bold mb-4 text-white text-center">Keyboard Heatmap</h1>
+          <div class="flex justify-center w-full">
+            <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
           </div>
+          <div class="flex flex-row items-center justify-center w-full gap-8">
+            <div>
+              <label for="scaling-select" class="mr-2 text-white">Scaling Method:</label>
+              <select id="scaling-select" v-model="scalingMethod" @change="updateHeatmap" class="p-2 rounded bg-gray-800 text-white">
+                <option value="linear">Linear</option>
+                <option value="logarithmic">Logarithmic</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div v-if="showHeatmap" class="flex mt-auto bottom-bar">
+          <!-- Date Counts -->
+          <DateCountBar @updateDayFilter="handleDayFilter" :resetTrigger="resetTrigger" class="w-full h-52"></DateCountBar>
         </div>
       </div>
 
@@ -50,27 +53,19 @@
       <div v-if="showSettings" class="flex flex-grow flex-col items-center justify-center p-4">
         <SettingsView />
       </div>
-
-      <!-- BOTTOM BAR -->
-      <div v-if="showHeatmap" class="flex w-full h-52 px-12 flex-row">
-        <!-- Date Counts -->
-        <DateCountBar @updateDayFilter="handleDayFilter" :resetTrigger="resetTrigger"></DateCountBar>
-      </div>
     </div>
 
     <!-- RIGHT SIDEBAR -->
-    <transition name="slide-right">
-      <div v-if="showHeatmap && rightSidebarOpen" class="sidebar right-sidebar">
-        <!-- Click Counts -->
-        <ClickCountBar :selectedApp="selectedApp" :selectedDate="selectedDate"></ClickCountBar>
-      </div>
-    </transition>
+    <div v-if="showHeatmap" class="sidebar right-sidebar">
+      <!-- Click Counts -->
+      <ClickCountBar :selectedApp="selectedApp" :selectedDate="selectedDate"></ClickCountBar>
+    </div>
   </div>
 </template>
 
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { ref } from 'vue';
 import AppCountBar from './components/AppCountBar.vue';
 import ClickCountBar from './components/ClickCountBar.vue';
 import DateCountBar from './components/DateCountBar.vue';
@@ -125,43 +120,6 @@ const toggleShowSettings = () => {
   showHeatmap.value = false
 }
 
-const leftSidebarOpen = ref(true);
-const rightSidebarOpen = ref(true);
-
-const toggleLeftSidebar = () => {
-  leftSidebarOpen.value = !leftSidebarOpen.value;
-};
-
-const toggleRightSidebar = () => {
-  rightSidebarOpen.value = !rightSidebarOpen.value;
-};
-
-const checkScreenSize = () => {
-  if (window.innerWidth < 1024) {
-    leftSidebarOpen.value = false;
-    rightSidebarOpen.value = false;
-  } else {
-    leftSidebarOpen.value = true;
-    rightSidebarOpen.value = true;
-  }
-};
-
-onMounted(() => {
-  checkScreenSize();
-  window.addEventListener('resize', checkScreenSize);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize);
-});
-
-const contentClass = computed(() => {
-  return {
-    'ml-60': leftSidebarOpen.value,
-    'mr-60': rightSidebarOpen.value,
-  };
-});
-
 </script>
 
 <style>
@@ -203,7 +161,7 @@ select option {
 }
 
 .sidebar {
-  @apply fixed top-0 bottom-0 w-60 transition-all duration-300 ease-in-out overflow-y-hidden z-10;
+  @apply fixed top-0 bottom-0 w-64 transition-all duration-300 ease-in-out overflow-y-hidden z-10;
 }
 
 .left-sidebar {
@@ -214,24 +172,8 @@ select option {
   @apply right-0;
 }
 
-.sidebar-toggle {
-  @apply bg-gray-700 text-white p-2 rounded-full;
+.bottom-bar {
+  @apply w-full sm:w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 mx-auto;
 }
 
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-left-enter-from,
-.slide-left-leave-to {
-  transform: translateX(-100%);
-}
-
-.slide-right-enter-from,
-.slide-right-leave-to {
-  transform: translateX(100%);
-}
 </style>
