@@ -24,9 +24,9 @@
       </div>
 
       <!-- HEATMAP AND DATE BAR -->
-      <div class="flex flex-col flex-grow items-center w-full max-w-5xl mx-auto px-4">
+      <div v-if="showHeatmap" class="flex flex-col flex-grow items-center w-full max-w-5xl mx-auto px-4">
         <!-- MAIN CONTENT -->
-        <div v-if="showHeatmap" class="flex flex-col items-center justify-center gap-4 w-full flex-grow">
+        <div  class="flex flex-col items-center justify-center gap-4 w-full flex-grow">
           <h1 class="text-2xl font-bold mb-4 text-white text-center">Keyboard Heatmap</h1>
           <div class="flex justify-center w-full">
             <KeyboardHeatmap ref="heatmapRef" :selectedApp="selectedApp" :selectedDate="selectedDate" :scalingMethod="scalingMethod" />
