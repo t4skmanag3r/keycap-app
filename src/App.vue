@@ -45,7 +45,12 @@
         <!-- BOTTOM BAR -->
         <div v-if="showHeatmap" class="flex mt-auto bottom-bar">
           <!-- Date Counts -->
-          <DateCountBar @updateDayFilter="handleDayFilter" :resetTrigger="resetTrigger" class="w-full h-52"></DateCountBar>
+          <DateCountBar 
+          @updateDayFilter="handleDayFilter" 
+          :resetTrigger="resetTrigger"
+          :selectedApp="selectedApp"
+          class="w-full h-52"
+        ></DateCountBar>
         </div>
       </div>
 
