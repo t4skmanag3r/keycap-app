@@ -2,6 +2,8 @@
 Keycap is a desktop application that tracks and visualizes your keyboard usage.
 Built with Tauri (Rust, Vuejs) for high performance and minimal memory usage when running in the background.
 
+![Showcase Screenshot](./images/showcase.png)
+
 ## Features
 
 - Real-time keyboard usage tracking

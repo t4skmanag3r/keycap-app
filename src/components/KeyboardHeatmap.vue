@@ -1,7 +1,7 @@
 <template>
-  <div class="keyboard-heatmap w-fit h-fit">
-    <div v-for="(row, rowIndex) in keyboardLayout" :key="rowIndex" class="flex justify-center">
-       <div
+  <div class="keyboard-heatmap inline-flex flex-col bg-gray-800 p-4 rounded-lg">
+    <div v-for="(row, rowIndex) in keyboardLayout" :key="rowIndex" class="flex justify-start">
+      <div
         v-for="(key, keyIndex) in row"
         :key="keyIndex"
         :title="getKeyClickCount(key)"

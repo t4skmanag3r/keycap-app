@@ -1,18 +1,28 @@
 <template>
-  <div class="w-full h-screen overflow-y-auto py-12 relative">
-    <transition-group 
-      name="key-list" 
-      tag="div" 
-      class="w-full flex flex-col gap-2"
-      @before-leave="onBeforeLeave"
-      @after-leave="onAfterLeave"
-    >
+  <div class="w-60 h-screen overflow-y-auto relative overflow-x-hidden">
+    <div class="flex justify-end gap-2 items-center my-4 mx-2">
+      <button @click="toggleSidebar" class="text-white flex items-center justify-center p-2 rounded hover:bg-gray-700 transition-colors duration-200">
+        <span class="material-symbols-outlined pointer-events-auto">
+          {{ isSidebarOpen ? 'chevron_right' : 'chevron_left' }}
+        </span>
+      </button>
+      <h2 class="text-lg font-bold text-white select-none">Click Counts</h2>
+    </div>
+    <transition name="sidebar">
+      <div v-if="isSidebarOpen" class="sidebar-content">
+        <transition-group 
+          name="key-list" 
+          tag="div" 
+          class="w-full flex flex-col gap-2 pointer-events-auto"
+          @before-leave="onBeforeLeave"
+          @after-leave="onAfterLeave"
+        >
       <div 
         v-for="(key, _) in sorted_keys" 
         :key="key.key" 
         class="flex flex-row items-center key-list-item"
       >
-        <div class="w-full h-6 bg-gray-700 rounded-l relative overflow-hidden">
+        <div class="w-full h-6 bg-gray-700 rounded-l relative overflow-hidded">
           <div 
             class="h-full bg-emerald-500 rounded-l absolute right-0 top-0"
             :style="{ width: `${(key.count / maxCount) * 100}%` }"
@@ -24,11 +34,13 @@
       </div>
     </transition-group>
   </div>
+  </transition>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 // Define props
 const props = defineProps<{
@@ -56,6 +68,28 @@ const fetchKeyStats = async () => {
   }
 };
 
+const isSidebarOpen = ref(true);
+
+const checkScreenSize = () => {
+  isSidebarOpen.value = window.innerWidth >= 1240;
+};
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize);
+});
+
+
+const emit = defineEmits(['sidebarToggled']);
+
 onMounted(fetchKeyStats);
 
 // Calculate the maximum count for scaling
@@ -77,8 +111,7 @@ const onAfterLeave = (el: Element) => {
   const htmlEl = el as HTMLElement;
   htmlEl.style.removeProperty('left');
   htmlEl.style.removeProperty('top');
-  htmlEl.style.removeProperty('width');
-  htmlEl.style.removeProperty('height');
+
 };
 
 </script>
@@ -87,11 +120,6 @@ const onAfterLeave = (el: Element) => {
 .key-list-item {
   transition: all 0.5s ease;
   position: relative;
-}
-
-.key-list-enter-active,
-.key-list-leave-active {
-  transition: all 0.5s ease;
 }
 
 .key-list-enter-from,
@@ -127,5 +155,23 @@ const onAfterLeave = (el: Element) => {
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background-color: #4a5568;
   border-radius: 4px;
+}
+
+.sidebar-content {
+  transition: all 0.3s ease-in-out;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sidebar-enter-from,
+.sidebar-leave-to {
+  transform: translateX(+100%);
+  opacity: 0;
+}
+
+.sidebar-enter-to,
+.sidebar-leave-from {
+  transform: translateX(0);
+  opacity: 1;
 }
 </style>
